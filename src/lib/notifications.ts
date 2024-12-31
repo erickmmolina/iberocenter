@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
 import { useAuthStore } from './auth/store';
+import { isGuestUser } from './auth/guest';
+
 
 export interface Notification {
   id: string;
@@ -59,7 +61,44 @@ export const useNotifications = create<NotificationsState>((set) => ({
       set({ notifications: [], loading: false });
       return;
     }
-
+    
+    if (isGuestUser(user.id)) {
+      const guestNotifications: Notification[] = [
+        {
+          id: 'guest-notif-1',
+          type: 'voicemail',
+          contact: {
+            name: 'Registro Necesario',
+            number: 'Crea una cuenta para recibir notificaciones reales'
+          },
+          timestamp: new Date(),
+          read: false
+        },
+        {
+          id: 'guest-notif-2',
+          type: 'voicemail',
+          contact: {
+            name: 'Crear Empresa',
+            number: 'Para habilitar paneles de empresa y estadísticas'
+          },
+          timestamp: new Date(),
+          read: false
+        },
+        {
+          id: 'guest-notif-3',
+          type: 'voicemail',
+          contact: {
+            name: 'Crear Tu Usuario',
+            number: 'Usa tu propio usuario en vez de modo invitado'
+          },
+          timestamp: new Date(),
+          read: false
+        }
+      ];
+      set({ notifications: guestNotifications, loading: false });
+       return;
+  }
+    
     set({ loading: true });
 
     try {

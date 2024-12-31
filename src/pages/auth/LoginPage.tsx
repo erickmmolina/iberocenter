@@ -1,40 +1,55 @@
+// File: /src/pages/auth/LoginPage.tsx
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, UserCircle2 } from 'lucide-react';
 import { AuthLayout } from './AuthLayout';
-import { useAuth } from '../../lib/auth/hooks';
-import { useAuthStore } from '../../lib/auth/store';
+import { useAuthStore } from '../../lib/auth/store';     // <-- import store
+import { useProfile } from '../../lib/profile/hooks';    // <-- import profile hook (si lo usas)
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
+
+  // 1) Extraemos user y signIn, signInAsGuest del store
   const { user, signIn, signInAsGuest } = useAuthStore();
 
+  // 2) Extraemos profile (y optional loading) de tu useProfile (opcional)
+  //    Si no usas useProfile, puedes también destructurar { profile } de useAuthStore.
+  const { profile } = useProfile();
+
+  // Al montarse o cuando user/profile cambien:
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true });
+      if (!profile) {
+        // No hay fila en 'profiles' => reanudar registro
+        navigate('/auth/register?step=company', { replace: true });
+      } else {
+        // Ir al Dashboard
+        navigate('/', { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
+  // Manejo de Submit (iniciar sesión)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     const { error: signInError } = await signIn(email, password);
-    
     if (signInError) {
       setError(signInError);
     }
-    
     setLoading(false);
   };
 
   return (
-    <AuthLayout 
+    <AuthLayout
       title="Bienvenido de nuevo"
       subtitle="Inicia sesión en tu cuenta para continuar"
     >

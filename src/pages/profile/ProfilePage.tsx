@@ -7,8 +7,11 @@ export function ProfilePage() {
   const { profile, loading, fetchProfile } = useAuth();
 
   useEffect(() => {
+  if (!profile) {
     fetchProfile();
-  }, [fetchProfile]);
+  }
+}, [profile, fetchProfile]);
+
 
   if (loading) {
     return (

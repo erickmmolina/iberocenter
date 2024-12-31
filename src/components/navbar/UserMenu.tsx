@@ -30,7 +30,23 @@ export function UserMenu() {
     );
   }
 
-  if (!profile) return null;
+  // Manejo perfil == null (ej. usuario con auth.users creado, pero sin fila en 'profiles')
+ if (!profile) {
+    // Muestra un fallback con botón de logout, o algo similar
+    return (
+      <div className="relative">
+        <button
+          onClick={() => {
+            signOut();
+            setIsOpen(false);
+          }}
+          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+        >
+          Cerrar Sesión (Perfil no encontrado)
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">

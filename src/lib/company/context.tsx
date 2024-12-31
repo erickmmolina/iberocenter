@@ -12,67 +12,81 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchCompany = async () => {
-    if (!user) {
+const fetchCompany = async () => {
+  if (!user) {
+    setCompany(null);
+    setLoading(false);
+    return;
+  }
+
+  // Manejar usuario invitado
+  if (isGuestUser(user.id)) {
+    setCompany({
+      id: GUEST_ID,
+      name: 'Modo Invitado',
+      created_at: new Date().toISOString()
+    });
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      // Si el perfil no existe, no lo consideramos un error
+      if (profileError.code === 'PGRST116') {
+        setCompany(null);
+        setLoading(false);
+        return;
+      }
+      throw profileError;
+    }
+
+    // Si profile es null o no hay company_id => no hay empresa asociada
+    if (!profile || !profile.company_id) {
       setCompany(null);
       setLoading(false);
       return;
     }
 
-    // Manejar usuario invitado
-    if (isGuestUser(user.id)) {
-      setCompany({
-        id: GUEST_ID,
-        name: 'Modo Invitado',
-        created_at: new Date().toISOString()
-      });
-      setLoading(false);
-      return;
+    const { data: companyData, error: companyError } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', profile.company_id)
+      .maybeSingle();
+
+    if (companyError) {
+      // Si la empresa no existe, no lo consideramos un error
+      if (companyError.code === 'PGRST116') {
+        setCompany(null);
+        setError(null);
+        return;
+      }
+      throw companyError;
     }
 
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        // Si el perfil no existe, no lo consideramos un error
-        if (profileError.code === 'PGRST116') {
-          setCompany(null);
-          setError(null);
-          setLoading(false);
-          return;
-        }
-        throw profileError;
-      }
-
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', profile.company_id)
-        .single();
-
-      if (companyError) {
-        // Si la empresa no existe, no lo consideramos un error
-        if (companyError.code === 'PGRST116') {
-          setCompany(null);
-          setError(null);
-          return;
-        }
-        throw companyError;
-      }
-
+    // companyData puede ser null si no existe fila => no es un error
+    // Si no existe => setCompany(null)
+    if (!companyData) {
+      setCompany(null);
+      setError(null);
+    } else {
       setCompany(companyData);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching company:', err);
-      setError(err as Error);
-    } finally {
-      setLoading(false);
     }
-  };
+
+  } catch (err) {
+    console.error('Error fetching company:', JSON.stringify(err, null, 2));
+    setError(err as Error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const updateCompany = async (updates: CompanyFormData) => {
     if (!company) return;
@@ -83,7 +97,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         .update(updates)
         .eq('id', company.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

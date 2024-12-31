@@ -85,18 +85,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           )
         `)
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      set({ profile: data });
-      return data;
-    } catch (error) {
-      AuthLogger.error('Error fetching profile:', error);
-      return null;
-    } finally {
-      set({ loading: false });
+      if (error) {
+      // Si el error es PGRST116 => 0 filas
+      if (error.code === 'PGRST116') {
+        // Podrías manejarlo de forma amable
+        AuthLogger.info('No se encontró un perfil para este usuario. ¿Acaba de registrarse?');
+        set({ profile: null });
+        return null;
+      }
+      throw error;
     }
-  },
+
+    // Si no existe ninguna fila en 'profiles', simplemente retornamos null
+    // sin forzar un signOut, ya que podría estar en medio del registro.
+    if (!data) {
+      AuthLogger.info('No se encontró un perfil. El usuario podría estar en proceso de registro.');
+      set({ profile: null });
+      return null;
+    }
+
+
+    // data sí existe => asignamos a store
+    set({ profile: data });
+    return data;
+  } catch (error: any) {
+    AuthLogger.error('Error fetching profile:', error);
+    return null;
+  } finally {
+    set({ loading: false });
+  }
+},
 
   updateProfile: async (updates) => {
     const { user } = get();

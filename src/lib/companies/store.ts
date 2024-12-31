@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../supabase';
 import { useAuthStore } from '../auth/store';
-import { isGuestUser } from '../auth/guest';
+import { isGuestUser, GUEST_ID } from '../auth/guest';  // <-- Agregar GUEST_ID
 import type { Company, CompaniesState } from './types';
+
 
 export const useCompanies = create<CompaniesState>()(
   persist(

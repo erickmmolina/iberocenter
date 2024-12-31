@@ -34,8 +34,26 @@ export async function signUpWithEmail(data: SignUpData) {
       }
     });
 
-    if (signUpError) throw signUpError;
-    if (!authData.user) throw new Error('No user data returned from signup');
+    // Manejo explícito de error si signUpError existe
+    if (signUpError) {
+      // Si el mensaje contiene 'Anonymous sign-ins are disabled', forzamos una excepción custom
+      if (
+        signUpError.message?.includes('Anonymous sign-ins are disabled') ||
+        signUpError.message?.includes('anonymous_provider_disabled')
+      ) {
+        const customError = new Error(
+          'El registro de usuarios está deshabilitado en este proyecto de Supabase. ' +
+          'Contacta al administrador o habilita los registros en la configuración del proyecto.'
+        );
+        customError.name = 'anonymous_provider_disabled';
+        throw customError;
+      }
+      throw signUpError;
+    }
+
+    if (!authData.user) {
+      throw new Error('No user data returned from signup');
+    }
 
     // 2. Create company
     const { data: company, error: companyError } = await supabase

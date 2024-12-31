@@ -6,7 +6,7 @@ Este proyecto es una aplicación web diseñada para gestionar llamadas, notifica
 
 ## Changelog
 
-### Versión 0.1.0
+### Versión 0.1.1
 
 **Funcionalidades implementadas:**
 - Página de Login: [Login](https://chic-paprenjak-dd0ba7.netlify.app/auth/login)
